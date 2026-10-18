@@ -1,3 +1,11 @@
+/*
+ Vincent Sanchez
+ Tabatha Valverde
+ CSCI-4120-M01 - Operating Systems
+ Modified: 18-Oct-2026
+ Project 1 - Module B
+*/
+
 #include "Project1_Module_B.h"
 
 int main(int argc, char *argv[]) {
@@ -21,15 +29,55 @@ int main(int argc, char *argv[]) {
      * Create and attach shared memory region 1 to store the matrix
      * 
      * Hint: Google shmget() and shmat()
+     *
+     * shmget(): Create the region and return its shared memory id.
+     * shmat(): Attach the region to this process's address space so the parent can initialize and access the matrix.
      */
 
-
+    int shmid_matrix = shmget(IPC_PRIVATE, ROWS_COUNT * COLUMN_COUNT * sizeof(int), IPC_CREAT | 0600);
+    
+    // Stop if the matrix shared memory could not be created.
+    if (shmid_matrix == -1) {
+        perror("shmget matrix");
+        return 1;
+    } // end of if
+    
+    int *matrix = (int*) shmat(shmid_matrix, NULL, 0);
+    
+    // If attachment fails, remove the shared memory region before exiting.
+    if (matrix == (void*) - 1) {
+        perror("shmat matrix");
+        shmctl(shmid_matrix, IPC_RMID, NULL);
+        return 1;
+    } // end of if
+    
+    
     /* ToDo2
      * create and attach shared memory region 2 to store the partial sums that
      * are returned by children processes.
      */
 
-
+    int shmid_partial_sum = shmget(IPC_PRIVATE, (size_t)num_processes * sizeof(long), IPC_CREAT | 0600);
+    
+    // If creation fails, detahc and remove the matrix shared memory.
+    if (shmid_partial_sum == -1) {
+        perror("shmget partial sums");
+        shmdt(matrix);
+        shmctl(shmid_matrix, IPC_RMID, NULL);
+        return 1;
+    } // end of if
+    
+    // Attach the partial sums shared memory to the parent process.
+    long *partial_sums = (long*) shmat(shmid_partial_sum, NULL, 0);
+    
+    // If attachment fails, clean up both shared memory regions.
+    if (partial_sums == (void*) - 1) {
+        perror("shmat partial sums");
+        shmdt(matrix);
+        shmctl(shmid_matrix, IPC_RMID, NULL);
+        shmctl(shmid_partial_sum, IPC_RMID, NULL);
+        return 1;
+    } // end of if
 
 
     /* ToDo3
@@ -42,7 +90,18 @@ int main(int argc, char *argv[]) {
      * elemnt of a 2D matrix i.e.,  matrix[0][0]
     */
 
-
+    for (int i = 0; i < ROWS_COUNT; i++){
+        
+        for (int j = 0; j < COLUMN_COUNT; j++){
+            matrix[i * COLUMN_COUNT + j] = i + j;
+        } // end inner for loop
+        
+    } // end outer for loop
+    
+    for (int i = 0; i < num_processes; i++){
+        partial_sums[i] = 0;
+    } // end for loop
+    
     clock_gettime(CLOCK_REALTIME, &start);
 
 
@@ -60,6 +119,11 @@ int main(int argc, char *argv[]) {
      *
     */
 
+    //  note: Found this, might be useful:
+    /*
+     int row_per_process = ROWS_COUNT / num_processes;
+     int extra_rows = ROWS_COUNT % num_processes;
+     */
 
 
     /* ToDo5
@@ -88,9 +152,14 @@ int main(int argc, char *argv[]) {
      * Google "man shmdt" and "man shmctl"
     */
 
-
-
-
+    // Detach
+    shmdt(matrix);
+    shmdt(partial_sums);
+    
+    // Destroy/Remove
+    shmctl(shmid_matrix, IPC_RMID, NULL);
+    shmctl(shmid_partial_sum, IPC_RMID, NULL);
+    
     return 0;
 }
 
