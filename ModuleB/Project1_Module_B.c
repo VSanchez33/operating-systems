@@ -119,23 +119,70 @@ int main(int argc, char *argv[]) {
      *
     */
 
-    //  note: Found this, might be useful:
-    /*
-     int row_per_process = ROWS_COUNT / num_processes;
-     int extra_rows = ROWS_COUNT % num_processes;
-     */
+    int rows_per_process = ROWS_COUNT / num_processes;
+    int extra_rows = ROWS_COUNT % num_processes;
+    int current_row = 0;
 
+    for (int i = 0; i < num_processes; i++) {
+        int rows_assigned = rows_per_process;
+
+        if (i < extra_rows) {
+            rows_assigned++;
+        }
+
+        int start_row = current_row;
+        current_row += rows_assigned;
+
+        pid_t pid = fork();
+
+        if (pid == 0) {
+
+            char start_str[32];
+            char rows_str[32];
+            char matrix_id_str[32];
+            char sum_id_str[32];
+            char index_str[32];
+
+            snprintf(start_str, sizeof(start_str), "%d", start_row);
+
+            snprintf(rows_str, sizeof(rows_str), "%d", rows_assigned);
+
+            snprintf(matrix_id_str, sizeof(matrix_id_str), "%d", shmid_matrix);
+
+            snprintf(sum_id_str, sizeof(sum_id_str), "%d", shmid_partial_sum);
+
+            snprintf(index_str, sizeof(index_str), "%d", i);
+
+            execlp("./child", "child",
+                start_str, rows_str,
+                matrix_id_str, sum_id_str,
+                index_str, (char *)NULL);
+
+            perror("execlp failed");
+            _exit(1);
+        }
+    }
 
     /* ToDo5
      * Wait for all children processes to complete
     */
 
-
+    for (int i = 0; i < num_processes; i++) {
+        wait(NULL);
+    } 
 
     /* ToDo6:
      * Sum all the partial-sums stored in sharred memory region 2 (by children processes)
      * and print the sum.
     */
+    
+    long total_sum = 0;
+
+    for (int i = 0; i < num_processes; i++) {
+        total_sum += partial_sums[i];
+    } 
+
+    printf("Total Matrix Sum: %ld\n", total_sum);
 
 
     clock_gettime(CLOCK_REALTIME, &end);
