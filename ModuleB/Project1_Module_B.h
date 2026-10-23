@@ -1,3 +1,11 @@
+/*
+ Vincent Sanchez
+ Tabatha Valverde
+ CSCI-4120-M01 - Operating Systems
+ Modified: 18-Oct-2026
+ Project 1 - Module B
+*/
+
 #ifndef PROJECT1_H
 #define PROJECT1_H
 
