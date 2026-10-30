@@ -1,3 +1,11 @@
+/*
+ Vincent Sanchez
+ Tabatha Valverde
+ CSCI-4120-M01 - Operating Systems
+ Modified: 30-Oct-2026
+ Project 2 - Module A
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,10 +26,19 @@ int main(int argc, char *argv[]) {
     ToDO 1: Open input file in read-only binary mode i.e. "rb"
     Hint: google "man fopen()"
     */
+    
+    FILE *Fin = fopen(input_file, "rb");
+    
 
     /*
     ToDo 2: Do error checking to ensure file was opened sucessfully before proceeding
     */
+    
+    if (Fin == NULL) {
+        printf("Failed to open file\n");
+        exit(0);
+    } // end of if
+    
 
     //======================Reading File Header=====================================
     //read the first line just to advance the cursor in file but dont use the line.
@@ -42,11 +59,14 @@ int main(int argc, char *argv[]) {
     fgetc(Fin); // consume the newline before pixel data
 
     //====================Done Reading File Header===================================
+    
     /*
-    ToDo 3: Allocate memory to store width x height number of pixels for black and white image. 
+    ToDo 3: Allocate memory to store width x height number of pixels for black and white image.
     Note that each pixel has max value of 255, so an 8-bit char is sufficent to store the pixel value.
     Hint: google "man malloc";
     */
+    
+    char *image = malloc(width * height *1);
     
 
     /*
@@ -54,19 +74,36 @@ int main(int argc, char *argv[]) {
     In case of failure, exit the program.
     */
 
+    if (image == NULL) {
+        printf("Failure in dynamically allocating the required memory size\n");
+        exit(0);
+    } // end of if
+    
 
     /*
     ToDo 5: read all the content of input image file into allocated memory.
     Hint: Google "man fread(3p)"
     */
+    
+    returnVal = fread (image, 1, width*height, Fin);
 
 
     /*ToDo 6: Do error checking to make sure that fread was sucessfull. If not, exit the program.
     Hoever, free the dynamically allocated memory before exiting.
     */
 
+    if (returnVal != (width*height)) {
+        
+        printf("Failure in reading input file into dynamically allocated memory\n");
+        free(image);
+        exit(0);
+        
+    } // end of if
+    
 
     //ToDo 7: close the input file
+    
+    fclose(Fin);
     
 
     /*
