@@ -113,13 +113,35 @@ int main(int argc, char *argv[]) {
     Each thread is responsible for doing the threshold operation on pixles of height/worker_thread_cnt number of rows. 
     */
 
+    pthread_t threads[worker_thread_cnt];
+    struct arguments args[worker_thread_cnt];
+
+    int rows_per_thread = height / worker_thread_cnt;
+
+    for (int i = 0; i < worker_thread_cnt; i++) {
+
+        args[i].image = image;
+        args[i].width = width;
+        args[i].start_row = i * rows_per_thread;
+        args[i].end_row = (i + 1) * rows_per_thread;
+
+        int result = pthread_create(&threads[i], NULL,
+                                    threshold_operation, &args[i]);
+
+        if (result != 0) {
+            fprintf(stderr, "Error creating thread: %s\n", strerror(result));
+            exit(1);
+        }
+    }
 
     /*
     ========================================ToDo 3:==============================
     Make the parent thread (the one that is generating new threads) wait for all threads to complete before proceeding.
     */
     
-
+    for (int i = 0; i < worker_thread_cnt; i++) {
+        pthread_join(threads[i], NULL);
+    }
 
     /*
     open the ouput file
