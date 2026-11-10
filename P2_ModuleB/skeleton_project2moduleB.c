@@ -1,3 +1,11 @@
+/*
+ Vincent Sanchez
+ Tabatha Valverde
+ CSCI-4120-M01 - Operating Systems
+ Modified: 9-Nov-2026
+ Project 2 - Module B
+*/
+
 #include "project2ModB.h"
 
 
@@ -69,7 +77,7 @@ int main(int argc, char *argv[]) {
     Hint: google "man malloc";
     */
 
-    char *image=malloc(width*height*1);
+    unsigned char *image=malloc(width*height*1);
     
 
     /*
@@ -113,8 +121,17 @@ int main(int argc, char *argv[]) {
     Each thread is responsible for doing the threshold operation on pixles of height/worker_thread_cnt number of rows. 
     */
 
-    pthread_t threads[worker_thread_cnt];
-    struct arguments args[worker_thread_cnt];
+    pthread_t threads[512];
+    pthread_attr_t attr; // Set of thread attributes
+    pthread_attr_init (&attr); // Initialize the attribute structure with default values
+    
+    struct arguments args[512];
+    
+    void *(*func_ptr)(void *);
+    func_ptr = threshold_operation;
+    
+    int start_row = 0;
+    int end_row;
 
     int rows_per_thread = height / worker_thread_cnt;
 
@@ -122,16 +139,12 @@ int main(int argc, char *argv[]) {
 
         args[i].image = image;
         args[i].width = width;
-        args[i].start_row = i * rows_per_thread;
-        args[i].end_row = (i + 1) * rows_per_thread;
+        end_row = start_row + rows_per_thread;
+        args[i].start_row = start_row;
+        args[i].end_row = end_row;
+        start_row = end_row;
 
-        int result = pthread_create(&threads[i], NULL,
-                                    threshold_operation, &args[i]);
-
-        if (result != 0) {
-            fprintf(stderr, "Error creating thread: %s\n", strerror(result));
-            exit(1);
-        }
+        pthread_create (&(threads[i]), &attr, func_ptr, &(args[i]));
     }
 
     /*
